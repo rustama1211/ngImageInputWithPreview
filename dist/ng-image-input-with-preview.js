@@ -19,33 +19,33 @@
     // http://odetocode.com/blogs/scott/archive/2013/07/03/building-a-filereader-service-for-angularjs-the-service.aspx
     module.factory('fileReader', ['$q',
       function($q) {
-        var onLoad = function(reader, deferred, scope) {
+        var onLoad = function(reader, filename,deferred, scope) {
           return function() {
             scope.$apply(function() {
-              deferred.resolve(reader.result);
+              deferred.resolve({data:reader.result,filename:filename});
             });
           };
         };
   
-        var onError = function(reader, deferred, scope) {
+        var onError = function(reader,filename, deferred, scope) {
           return function() {
             scope.$apply(function() {
-              deferred.reject(reader.result);
+              deferred.reject({data:reader.result,filename:filename});
             });
           };
         };
   
-        var getReader = function(deferred, scope) {
+        var getReader = function(deferred,filename, scope) {
           var reader = new FileReader();
-          reader.onload = onLoad(reader, deferred, scope);
-          reader.onerror = onError(reader, deferred, scope);
+          reader.onload = onLoad(reader,filename, deferred, scope);
+          reader.onerror = onError(reader,filename, deferred, scope);
           return reader;
         };
   
         var readAsDataURL = function(file, scope) {
           var deferred = $q.defer();
   
-          var reader = getReader(deferred, scope);
+          var reader = getReader(deferred,file.name ,scope);
           reader.readAsDataURL(file);
   
           return deferred.promise;
@@ -142,7 +142,8 @@
                 delete value.fileReaderPromise;
               });
               return value.fileReaderPromise.then(function(dataUrl) {
-                value.src = dataUrl;
+                value.src = dataUrl.data;
+                value.filename = dataUrl.filename;
               }, function() {
                 return $q.reject('Failed to parse');
               });
@@ -177,7 +178,9 @@
                     deferred.reject('Failed to detect dimensions. Not an image!');
                   });
                 });
-                image.src = dataUrl;
+                image.src = dataUrl.data;
+                image.filename = dataUrl.filename;
+
               }, function() {
                 deferred.reject('Failed to detect dimensions');
               });
